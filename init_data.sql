@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict V7Jb3Ivbo3qWeQCeLeebGZSlzaYaVRcE0WTlBmbEw2z4EqYql05pJN0bBqUS3W9
+\restrict GoicX2PBEKSeeBS3inzV5PFntDikmLmfMRIeZBHfiez6RIcZ9aalNbqy0uRcbD0
 
 -- Dumped from database version 17.9 (Debian 17.9-1.pgdg13+1)
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -192,6 +192,7 @@ COPY public.flyway_schema_history (installed_rank, version, description, type, s
 
 COPY public.posts (id, user_id, content, created_at) FROM stdin;
 1	3	bob bob bob 	2026-03-20 11:20:25.352254
+2	1	new content	2026-03-24 16:34:27.087929
 \.
 
 
@@ -212,6 +213,7 @@ COPY public.users (id, name, email, username, password, role, created_at) FROM s
 1	Admin User	admin@example.com	admin	$2a$10$AZg5rtrPgljiIHXzyuel2O4bE5lI2KhL7K08iBej7ykWQqN2Jwcx.	ROLE_ADMIN	2026-03-20 11:00:28.476529
 2	Daniil	daniil@example.com	daniil_pro	$2a$10$F1Mr7TLtbjghO29J.SnTgOgqhsC7Z8Rnk7pNEX0h2SG40bsH68BLu	ROLE_USER	2026-03-20 11:00:28.476529
 3	bob	bob@example.com	BigBob	$2a$10$g9oeK/uTJDNJja7eLVOtY.qGlz0Ex6ByEOrSnDLAyngj.cnjVFBwe	ROLE_USER	2026-03-20 11:06:56.664747
+4	Ivan Ivanov	ivan@example.com	ivan2026	$2a$10$boACgMipZB2g40tf9/odueeo82BeYxMcFGkC2vX8SRPMy1jES9Vym	ROLE_USER	2026-03-24 16:33:40.486927
 \.
 
 
@@ -219,7 +221,7 @@ COPY public.users (id, name, email, username, password, role, created_at) FROM s
 -- Name: posts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.posts_id_seq', 1, true);
+SELECT pg_catalog.setval('public.posts_id_seq', 2, true);
 
 
 --
@@ -233,7 +235,7 @@ SELECT pg_catalog.setval('public.tasks_id_seq', 1, true);
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 3, true);
+SELECT pg_catalog.setval('public.users_id_seq', 4, true);
 
 
 --
@@ -311,5 +313,5 @@ ALTER TABLE ONLY public.tasks
 -- PostgreSQL database dump complete
 --
 
-\unrestrict V7Jb3Ivbo3qWeQCeLeebGZSlzaYaVRcE0WTlBmbEw2z4EqYql05pJN0bBqUS3W9
+\unrestrict GoicX2PBEKSeeBS3inzV5PFntDikmLmfMRIeZBHfiez6RIcZ9aalNbqy0uRcbD0
 

@@ -9,7 +9,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 @EnableAsync // для методов в отдельных потоках
 @SpringBootApplication
 public class WebappApplication {
-
 	public static void main(String[] args) {
 		SpringApplication.run(WebappApplication.class, args);
 	}
