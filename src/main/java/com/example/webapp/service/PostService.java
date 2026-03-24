@@ -30,17 +30,13 @@ public class PostService {
 
     @Transactional
     public PostResponseDTO create(CreatePostRequestDTO dto, String username) {
-        // 1. Ищем автора по логину (username), который пришел из контроллера
         User author = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
 
-        // 2. Мапим контент поста
         Post post = mapper.toEntity(dto);
 
-        // 3. ПРИВЯЗЫВАЕМ автора (теперь это 100% тот, кто залогинен)
         post.setUser(author);
 
         return mapper.toDto(postRepository.save(post));
     }
-
 }

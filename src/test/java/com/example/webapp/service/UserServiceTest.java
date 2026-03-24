@@ -1,12 +1,14 @@
 package com.example.webapp.service;
 
-import com.example.webapp.dto.user.CreateUserRequestDto;
-import com.example.webapp.dto.user.UpdateUserRequestDto;
-import com.example.webapp.dto.user.UserResponseDto;
+import com.example.webapp.dto.user.CreateUserRequestDTO;
+import com.example.webapp.dto.user.UpdateUserRequestDTO;
+import com.example.webapp.dto.user.UserResponseDTO;
 import com.example.webapp.entity.User;
 import com.example.webapp.exception.BadRequestException;
+import com.example.webapp.exception.ResourceNotFoundException;
 import com.example.webapp.mapper.UserMapper;
 import com.example.webapp.repository.UserRepository;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,86 +16,111 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(MockitoExtension.class) // подключение Mockito к JUnit 5
 class UserServiceTest {
 
+    // @Mock создает пустышку зависимости, она ничего не умеет
     @Mock
-    private UserRepository repo;
+    private UserRepository repo; // мок для репозитория
 
     @Mock
-    private UserMapper mapper;
+    private UserMapper mapper; // мок для маппера
 
+    @Mock
+    private PasswordEncoder passwordEncoder; // мок для хэширования пароля
+
+    @Mock
+    private AsyncService asyncService; // мок для асинхронного сервиса
+
+    // @InjectMocks создает реальный UserService и вставляет в него созданные выше @Mock
     @InjectMocks
     private UserService userService;
 
-    @Mock
-    private PasswordEncoder passwordEncoder; // Добавляем мок для энкодера
-
     @Test
+    @DisplayName("Успешное создание пользователя")
     void create_ShouldSaveUser_WhenEmailIsUnique() {
-        // 1. Arrange (Подготовка данных)
-        var dto = new CreateUserRequestDto("Ivan", "ivan@mail.com", "ivan_user", "pass123");
-        var user = new User(); // имитируем сущность
-        var response = new UserResponseDto(1L, "Ivan", "ivan@mail.com");
+        // вводные тестовые данные
+        var dto = new CreateUserRequestDTO("Ivan", "ivan@mail.com", "ivan_user", "pass123");
+        var userEntity = new User();
+        var response = new UserResponseDTO(1L, "Ivan", "ivan@mail.com");
 
+        // описание ситуации для данных
         when(repo.existsByEmail(dto.email())).thenReturn(false); // email свободен
-        when(mapper.toEntity(dto)).thenReturn(user);
-        when(repo.save(user)).thenReturn(user);
-        when(mapper.toDto(user)).thenReturn(response);
-        when(passwordEncoder.encode(anyString())).thenReturn("hashed_pass");
+        when(mapper.toEntity(dto)).thenReturn(userEntity); // маппер вернул сущность
+        // пароль зашифрован и в БД летит hashed_pass
+        when(Objects.requireNonNull(passwordEncoder.encode(anyString()))).thenReturn("hashed_pass");
+        when(repo.save(userEntity)).thenReturn(userEntity); // сохранение прошло успешно
+        when(mapper.toDto(userEntity)).thenReturn(response); // маппер вернул итоговый DTO
 
-        // 2. Act (Действие)
-        UserResponseDto result = userService.create(dto);
+        // вызов реального метода сервиса
+        UserResponseDTO result = userService.create(dto);
 
-        // 3. Assert (Проверка)
-        assertNotNull(result);
-        assertEquals("ivan@mail.com", result.email());
-        verify(repo, times(1)).save(any()); // проверяем, что метод save реально вызвался
+        // проверка результата
+        assertNotNull(result); // проверка что result не null
+        assertEquals("ivan@mail.com", result.email()); // сравниваются значения email
+
+        // проверка поведения, поскольку одного результата мало
+        // проверка, что метод save вызвался ровно 1 раз
+        verify(repo, times(1)).save(userEntity);
+        verify(asyncService).processExternalTask(any()); // проверка, что асинхронная задача была запущена
     }
 
     @Test
+    @DisplayName("Ошибка 404, если пользователь не найден по ID")
+    void getById_ShouldThrowNotFoundException_WhenUserDoesNotExist() {
+        Long userId = 99L;
+
+        // делаем мок репозитория так, чтобы он вернул пустоту
+        when(repo.findById(userId)).thenReturn(Optional.empty());
+
+        // проверка, что метод выбросит именно ResourceNotFoundException
+        assertThrows(ResourceNotFoundException.class, () -> userService.getById(userId));
+
+        // проверка, что до маппинга дело не дойдёт
+        verifyNoInteractions(mapper);
+    }
+
+    @Test
+    @DisplayName("Ошибка 400, если email уже занят")
     void create_ShouldThrowException_WhenEmailAlreadyExists() {
-        // Arrange
-        var dto = new CreateUserRequestDto("Ivan", "ivan@mail.com", "ivan_user", "pass123");
-        when(repo.existsByEmail(dto.email())).thenReturn(true); // email ЗАНЯТ
+        var dto = new CreateUserRequestDTO("Ivan", "ivan@mail.com", "ivan_user", "pass123");
+        when(repo.existsByEmail(dto.email())).thenReturn(true); // имитация, что email уже есть в БД
 
-        // Act & Assert
         assertThrows(BadRequestException.class, () -> userService.create(dto));
-        verify(repo, never()).save(any()); // ГЛАВНОЕ: проверяем, что до сохранения дело не дошло!
+
+        // проверка, что метод save не вызывался
+        verify(repo, never()).save(any());
     }
 
     @Test
-    void update_ShouldUpdateUser_WhenUserExistsAndEmailIsUnique() {
-        // 1. Arrange
+    @DisplayName("Обновление данных без вызова метода save")
+    void update_ShouldUpdateUser_WhenUserExists() {
         Long userId = 1L;
-        var dto = new UpdateUserRequestDto("New Name", "new@mail.com");
-        var existingUser = new User(); // Существующий в базе юзер
+        var dto = new UpdateUserRequestDTO("New Name", "new@mail.com");
+        var existingUser = new User();
         existingUser.setId(userId);
         existingUser.setEmail("old@mail.com");
 
-        var response = new UserResponseDto(userId, "New Name", "new@mail.com");
-
-        // Имитируем: юзер найден, email свободен
+        // имитация, что в БД есть старый пользователь
         when(repo.findById(userId)).thenReturn(Optional.of(existingUser));
-        when(repo.existsByEmail(dto.email())).thenReturn(false);
-        when(mapper.toDto(existingUser)).thenReturn(response);
+        when(repo.existsByEmail(dto.email())).thenReturn(false); // новый email свободен
+        // если сущность мапится, то надо создать DTO для ответа
+        when(mapper.toDto(existingUser)).thenReturn(new UserResponseDTO(userId, "New Name", "new@mail.com"));
 
-        // 2. Act
-        UserResponseDto result = userService.update(userId, dto);
+        UserResponseDTO result = userService.update(userId, dto);
 
-        // 3. Assert
-        assertNotNull(result);
         assertEquals("New Name", result.name());
 
-        // Проверяем, что маппер реально вызывался для обновления полей
+        // проверка вызовом маппера для обновления полей сущности
         verify(mapper).updateEntity(existingUser, dto);
-        // Проверяем, что save НЕ вызывался (так как у нас Dirty Checking в транзакции)
+        // проверка, что не вызывался repo.save(), так как есть механизм транзакций Hibernate
         verify(repo, never()).save(any());
     }
 }

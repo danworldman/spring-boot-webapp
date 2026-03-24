@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.stream.Collectors;
 
 @Slf4j
-@RestControllerAdvice
+@RestControllerAdvice // слежка за всеми контролерами и возвращать JSON
 public class GlobalExceptionHandler {
 
     // 404

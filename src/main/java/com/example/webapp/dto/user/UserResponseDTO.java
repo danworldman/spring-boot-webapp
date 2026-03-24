@@ -3,7 +3,7 @@ package com.example.webapp.dto.user;
 import java.io.Serial;
 import java.io.Serializable;
 
-public record UserResponseDto(
+public record UserResponseDTO(
         Long id,
         String name,
         String email

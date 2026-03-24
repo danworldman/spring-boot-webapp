@@ -1,8 +1,8 @@
 package com.example.webapp.service;
 
-import com.example.webapp.dto.user.CreateUserRequestDto;
-import com.example.webapp.dto.user.UpdateUserRequestDto;
-import com.example.webapp.dto.user.UserResponseDto;
+import com.example.webapp.dto.user.CreateUserRequestDTO;
+import com.example.webapp.dto.user.UpdateUserRequestDTO;
+import com.example.webapp.dto.user.UserResponseDTO;
 import com.example.webapp.entity.User;
 import com.example.webapp.exception.*;
 import com.example.webapp.mapper.UserMapper;
@@ -15,7 +15,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
@@ -30,8 +29,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final AsyncService asyncService;
 
-
-    public UserResponseDto getById(Long id) {
+    public UserResponseDTO getById(Long id) {
         return repo.findById(id)
                 .map(mapper::toDto)
                 // Вместо IllegalArgumentException теперь тут кастомный 404
@@ -40,7 +38,7 @@ public class UserService {
 
     @Cacheable(value = "users", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     @Transactional(readOnly = true)
-    public List<UserResponseDto> getAll(Pageable pageable) {
+    public List<UserResponseDTO> getAll(Pageable pageable) {
         log.info("Fetching page of users: {}", pageable);
         return repo.findAll(pageable)
                 .map(mapper::toDto)
@@ -49,7 +47,7 @@ public class UserService {
 
     @CacheEvict(value = "users", allEntries = true)
     @Transactional
-    public UserResponseDto create(CreateUserRequestDto dto) {
+    public UserResponseDTO create(CreateUserRequestDTO dto) {
         log.info("Starting to create user with email: {}", dto.email()); // {} - плейсхолдер
 
         if (repo.existsByEmail(dto.email())) {
@@ -76,7 +74,7 @@ public class UserService {
 
     @CacheEvict(value = "users", allEntries = true)
     @Transactional
-    public UserResponseDto update(Long id, UpdateUserRequestDto dto) {
+    public UserResponseDTO update(Long id, UpdateUserRequestDTO dto) {
         User user = repo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 

@@ -24,8 +24,6 @@ public class PostController {
 
     @PostMapping
     public PostResponseDTO create(@Valid @RequestBody CreatePostRequestDTO dto, Principal principal) {
-        // Вызываем сервис и передаем туда логин (например, "admin")
-        // Мы берем имя (логин) из защищенного контекста, а не из JSON
         String username = principal.getName();
         return service.create(dto, username);
     }

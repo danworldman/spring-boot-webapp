@@ -1,7 +1,7 @@
 package com.example.webapp.service;
 
-import com.example.webapp.dto.task.CreateTaskRequestDto;
-import com.example.webapp.dto.task.TaskResponseDto;
+import com.example.webapp.dto.task.CreateTaskRequestDTO;
+import com.example.webapp.dto.task.TaskResponseDTO;
 import com.example.webapp.entity.Task;
 import com.example.webapp.entity.User;
 import com.example.webapp.exception.ResourceNotFoundException;
@@ -21,13 +21,13 @@ public class TaskService {
     private final UserRepository userRepository; // для юзера
     private final TaskMapper mapper;
 
-    public List<TaskResponseDto> getAll(){
+    public List<TaskResponseDTO> getAll(){
         return taskRepository.findAll().stream()
                 .map(mapper::toDto)
                 .toList();
     }
 
-    public TaskResponseDto create(CreateTaskRequestDto dto, String username) {
+    public TaskResponseDTO create(CreateTaskRequestDTO dto, String username) {
 
         // поиск теперь по логину, а не по id
         User user = userRepository.findByUsername(username)

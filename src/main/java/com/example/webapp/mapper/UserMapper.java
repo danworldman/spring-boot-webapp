@@ -1,15 +1,16 @@
 package com.example.webapp.mapper;
 
-import com.example.webapp.dto.user.CreateUserRequestDto;
-import com.example.webapp.dto.user.UpdateUserRequestDto;
-import com.example.webapp.dto.user.UserResponseDto;
+import com.example.webapp.dto.user.CreateUserRequestDTO;
+import com.example.webapp.dto.user.UpdateUserRequestDTO;
+import com.example.webapp.dto.user.UserResponseDTO;
 import com.example.webapp.entity.User;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UserMapper {
 
-    public User toEntity(CreateUserRequestDto dto) {
+    public User toEntity(CreateUserRequestDTO dto) {
+        if (dto == null) return null;
         User u = new User();
         u.setName(dto.name());
         u.setEmail(dto.email());
@@ -18,14 +19,14 @@ public class UserMapper {
         return u;
     }
 
-    public void updateEntity(User user, UpdateUserRequestDto dto) {
+    public void updateEntity(User user, UpdateUserRequestDTO dto) {
         user.setName(dto.name());
         user.setEmail(dto.email());
     }
 
-    public UserResponseDto toDto(User user) {
+    public UserResponseDTO toDto(User user) {
         if (user == null) return null;
-        return new UserResponseDto(
+        return new UserResponseDTO(
                 user.getId(),
                 user.getName(),
                 user.getEmail()

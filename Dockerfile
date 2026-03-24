@@ -7,7 +7,7 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline
 
-# Теперь копирются исходники и собирается проект
+# Теперь копируются исходники и собирается проект
 COPY src ./src
 RUN mvn clean package -DskipTests
 
