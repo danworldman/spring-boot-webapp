@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -51,4 +53,15 @@ public class User {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "subscriptions",
+            joinColumns = @JoinColumn(name = "follower_id"), // user, который подписывается
+            inverseJoinColumns = @JoinColumn(name = "following_id") // и пользователи, на которых user подписывается
+    )
+    private Set<User> following = new HashSet<>(); // те, на кого подписан user
+
+    @ManyToMany(mappedBy = "following", fetch = FetchType.LAZY) // те, кто подписаны на user
+    private Set<User> followers = new HashSet<>();
 }

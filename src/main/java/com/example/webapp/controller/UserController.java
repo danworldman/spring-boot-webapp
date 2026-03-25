@@ -51,4 +51,14 @@ public class UserController {
     public void delete(@PathVariable @Min(1) Long id) {
         service.delete(id);
     }
+
+    @PostMapping("/{id}/follow")
+    public void follow(@PathVariable Long id, @RequestParam Long followerId) {
+        service.follow(followerId, id);
+    }
+
+    @DeleteMapping("/{id}/unfollow")
+    public void unfollow(@PathVariable Long id, @RequestParam Long followerId) {
+        service.unfollow(followerId, id);
+    }
 }

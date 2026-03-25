@@ -4,6 +4,7 @@ import com.example.webapp.dto.user.CreateUserRequestDTO;
 import com.example.webapp.dto.user.UpdateUserRequestDTO;
 import com.example.webapp.dto.user.UserResponseDTO;
 import com.example.webapp.entity.User;
+import com.example.webapp.event.UserRegisteredEvent;
 import com.example.webapp.exception.BadRequestException;
 import com.example.webapp.exception.ResourceNotFoundException;
 import com.example.webapp.mapper.UserMapper;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Objects;
@@ -39,6 +41,9 @@ class UserServiceTest {
     @Mock
     private AsyncService asyncService; // мок для асинхронного сервиса
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher; // мок для события
+
     // @InjectMocks создает реальный UserService и вставляет в него созданные выше @Mock
     @InjectMocks
     private UserService userService;
@@ -49,13 +54,13 @@ class UserServiceTest {
         // вводные тестовые данные
         var dto = new CreateUserRequestDTO("Ivan", "ivan@mail.com", "ivan_user", "pass123");
         var userEntity = new User();
-        var response = new UserResponseDTO(1L, "Ivan", "ivan@mail.com");
+        var response = new UserResponseDTO(1L, "Ivan", "ivan@mail.com",0L, 0L);
 
         // описание ситуации для данных
         when(repo.existsByEmail(dto.email())).thenReturn(false); // email свободен
         when(mapper.toEntity(dto)).thenReturn(userEntity); // маппер вернул сущность
         // пароль зашифрован и в БД летит hashed_pass
-        when(Objects.requireNonNull(passwordEncoder.encode(anyString()))).thenReturn("hashed_pass");
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed_pass");
         when(repo.save(userEntity)).thenReturn(userEntity); // сохранение прошло успешно
         when(mapper.toDto(userEntity)).thenReturn(response); // маппер вернул итоговый DTO
 
@@ -69,7 +74,9 @@ class UserServiceTest {
         // проверка поведения, поскольку одного результата мало
         // проверка, что метод save вызвался ровно 1 раз
         verify(repo, times(1)).save(userEntity);
-        verify(asyncService).processExternalTask(any()); // проверка, что асинхронная задача была запущена
+
+        // проверка, что UserService опубликовал событие через EventPublisher
+        verify(eventPublisher, times(1)).publishEvent(any(UserRegisteredEvent.class));
     }
 
     @Test
@@ -112,7 +119,7 @@ class UserServiceTest {
         when(repo.findById(userId)).thenReturn(Optional.of(existingUser));
         when(repo.existsByEmail(dto.email())).thenReturn(false); // новый email свободен
         // если сущность мапится, то надо создать DTO для ответа
-        when(mapper.toDto(existingUser)).thenReturn(new UserResponseDTO(userId, "New Name", "new@mail.com"));
+        when(mapper.toDto(existingUser)).thenReturn(new UserResponseDTO(userId, "New Name", "new@mail.com", 0L, 0L));
 
         UserResponseDTO result = userService.update(userId, dto);
 
@@ -122,5 +129,34 @@ class UserServiceTest {
         verify(mapper).updateEntity(existingUser, dto);
         // проверка, что не вызывался repo.save(), так как есть механизм транзакций Hibernate
         verify(repo, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Успешная подписка на пользователя")
+    void follow_ShouldAddUserToFollowing_WhenBothExist() {
+        Long followerId = 1L;
+        Long followingId = 2L;
+
+        User follower = new User();
+        follower.setId(followerId);
+        follower.setFollowing(new java.util.HashSet<>());
+
+        User following = new User();
+        following.setId(followingId);
+
+        when(repo.findById(followerId)).thenReturn(Optional.of(follower));
+        when(repo.findById(followingId)).thenReturn(Optional.of(following));
+
+        userService.follow(followerId, followingId);
+
+        assertTrue(follower.getFollowing().contains(following));
+        verify(repo, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Ошибка при подписке на самого себя")
+    void follow_ShouldThrowException_WhenIdsAreSame() {
+        Long id = 5L;
+        assertThrows(BadRequestException.class, () -> userService.follow(id, id));
     }
 }

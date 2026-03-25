@@ -49,3 +49,29 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus-webapp
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml # конфиг, где искать приложение
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # позволяет Docker видеть порт 8081
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana-webapp
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin} # пароль для входа в панель
+    volumes:
+      - .grafana_storage:/var/lib/grafana
+      - ./grafana_init/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana_init/dashboards:/etc/grafana/provisioning/dashboards
+    user: "0"
+
+volumes:
+  grafana_storage:

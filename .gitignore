@@ -39,3 +39,6 @@ postgres_data/
 # Логи приложения
 *.log
 ~$*.docx
+
+grafana_data/
+postgres_data/

@@ -20,16 +20,27 @@ public class UserMapper {
     }
 
     public void updateEntity(User user, UpdateUserRequestDTO dto) {
+        if (dto == null) return;
         user.setName(dto.name());
         user.setEmail(dto.email());
     }
 
     public UserResponseDTO toDto(User user) {
         if (user == null) return null;
+
+        // обращение к коллекции
+        // поскольку в User стоит FetchType.LAZY, именно в этот момент
+        // Hibernate пойдет в БД за данными, если их еще нет в памяти
+        long followersCount = user.getFollowers() != null ? user.getFollowers().size() : 0;
+        long followingCount = user.getFollowing() != null ? user.getFollowing().size() : 0;
+
+        // передача в record
         return new UserResponseDTO(
                 user.getId(),
                 user.getName(),
-                user.getEmail()
+                user.getEmail(),
+                followersCount,
+                followingCount
         );
     }
 }

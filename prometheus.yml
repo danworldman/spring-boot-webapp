@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 5s # Метрики собираются каждые 5 секунд
+
+scrape_configs:
+  - job_name: 'spring-webapp-docker'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['spring-webapp:8080'] # Docker
+
+  - job_name: 'spring-webapp-ide'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['host.docker.internal:8081'] # IDE

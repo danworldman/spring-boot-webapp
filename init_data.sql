@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict GoicX2PBEKSeeBS3inzV5PFntDikmLmfMRIeZBHfiez6RIcZ9aalNbqy0uRcbD0
+\restrict GfnJ8GD6TsoiKe4zvttF1L0I0BLVuBis9VHlPyVSRlJWaWdwltkaxdDHnsbXLQf
 
 -- Dumped from database version 17.9 (Debian 17.9-1.pgdg13+1)
 -- Dumped by pg_dump version 17.9 (Debian 17.9-1.pgdg13+1)
@@ -79,40 +79,18 @@ ALTER SEQUENCE public.posts_id_seq OWNED BY public.posts.id;
 
 
 --
--- Name: tasks; Type: TABLE; Schema: public; Owner: postgres
+-- Name: subscriptions; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.tasks (
-    id bigint NOT NULL,
-    user_id bigint NOT NULL,
-    title character varying(255) NOT NULL,
-    text character varying(255) NOT NULL,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE public.subscriptions (
+    follower_id bigint NOT NULL,
+    following_id bigint NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT check_self_follow CHECK ((follower_id <> following_id))
 );
 
 
-ALTER TABLE public.tasks OWNER TO postgres;
-
---
--- Name: tasks_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.tasks_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.tasks_id_seq OWNER TO postgres;
-
---
--- Name: tasks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.tasks_id_seq OWNED BY public.tasks.id;
-
+ALTER TABLE public.subscriptions OWNER TO postgres;
 
 --
 -- Name: users; Type: TABLE; Schema: public; Owner: postgres
@@ -160,13 +138,6 @@ ALTER TABLE ONLY public.posts ALTER COLUMN id SET DEFAULT nextval('public.posts_
 
 
 --
--- Name: tasks id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.tasks ALTER COLUMN id SET DEFAULT nextval('public.tasks_id_seq'::regclass);
-
-
---
 -- Name: users id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -178,11 +149,13 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 --
 
 COPY public.flyway_schema_history (installed_rank, version, description, type, script, checksum, installed_by, installed_on, execution_time, success) FROM stdin;
-1	1	Create users table	SQL	V1__Create_users_table.sql	641713181	postgres	2026-03-20 09:11:09.167537	56	t
-2	2	Create tasks table	SQL	V2__Create_tasks_table.sql	-644605959	postgres	2026-03-20 09:11:09.270202	28	t
-3	3	Create posts table	SQL	V3__Create_posts_table.sql	1135962925	postgres	2026-03-20 09:11:09.323434	30	t
-4	4	add auth to users	SQL	V4__add_auth_to_users.sql	-663904242	postgres	2026-03-20 09:11:09.370141	26	t
-5	5	add audit columns	SQL	V5__add_audit_columns.sql	-1881804015	postgres	2026-03-20 11:00:28.408026	106	t
+1	1	Create users table	SQL	V1__Create_users_table.sql	641713181	postgres	2026-03-25 06:53:32.857606	62	t
+2	2	Create posts table	SQL	V2__Create_posts_table.sql	-1211158245	postgres	2026-03-25 06:53:32.978114	37	t
+3	3	add auth to users	SQL	V3__add_auth_to_users.sql	-860456590	postgres	2026-03-25 06:53:33.041397	19	t
+4	4	Create subscriptions  table	SQL	V4__Create_subscriptions _table.sql	-767720677	postgres	2026-03-25 06:53:33.089546	32	t
+5	5	add audit columns	SQL	V5__add_audit_columns.sql	635820297	postgres	2026-03-25 06:53:33.135432	9	t
+6	6	Add indexes	SQL	V6__Add_indexes.sql	2143552015	postgres	2026-03-25 06:53:33.161696	34	t
+7	7	Add username index for security	SQL	V7__Add_username_index_for_security.sql	1810604806	postgres	2026-03-25 11:34:43.460691	95	t
 \.
 
 
@@ -191,17 +164,15 @@ COPY public.flyway_schema_history (installed_rank, version, description, type, s
 --
 
 COPY public.posts (id, user_id, content, created_at) FROM stdin;
-1	3	bob bob bob 	2026-03-20 11:20:25.352254
-2	1	new content	2026-03-24 16:34:27.087929
 \.
 
 
 --
--- Data for Name: tasks; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: subscriptions; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.tasks (id, user_id, title, text, created_at) FROM stdin;
-1	1	task 1	task 1 task 1 task 1	2026-03-23 13:36:30.402062
+COPY public.subscriptions (follower_id, following_id, created_at) FROM stdin;
+2	1	2026-03-25 06:55:12.490912
 \.
 
 
@@ -210,10 +181,11 @@ COPY public.tasks (id, user_id, title, text, created_at) FROM stdin;
 --
 
 COPY public.users (id, name, email, username, password, role, created_at) FROM stdin;
-1	Admin User	admin@example.com	admin	$2a$10$AZg5rtrPgljiIHXzyuel2O4bE5lI2KhL7K08iBej7ykWQqN2Jwcx.	ROLE_ADMIN	2026-03-20 11:00:28.476529
-2	Daniil	daniil@example.com	daniil_pro	$2a$10$F1Mr7TLtbjghO29J.SnTgOgqhsC7Z8Rnk7pNEX0h2SG40bsH68BLu	ROLE_USER	2026-03-20 11:00:28.476529
-3	bob	bob@example.com	BigBob	$2a$10$g9oeK/uTJDNJja7eLVOtY.qGlz0Ex6ByEOrSnDLAyngj.cnjVFBwe	ROLE_USER	2026-03-20 11:06:56.664747
-4	Ivan Ivanov	ivan@example.com	ivan2026	$2a$10$boACgMipZB2g40tf9/odueeo82BeYxMcFGkC2vX8SRPMy1jES9Vym	ROLE_USER	2026-03-24 16:33:40.486927
+1	Admin User	admin@example.com	admin	$2a$10$AZg5rtrPgljiIHXzyuel2O4bE5lI2KhL7K08iBej7ykWQqN2Jwcx.	ROLE_ADMIN	2026-03-25 06:53:33.142572
+2	Ivan Tech	ivan@example.com	ivan_user	$2a$10$irrnO9TGNOG4EGCGEe9qQ.JzqbPKKKLzdOh9YjFnk5U2zzdR/5C46	ROLE_USER	2026-03-25 06:54:21.966314
+3	Artem	artem_2026@example.com	artem123	$2a$10$CHacM1eawz7jTqRLyvYZmuvuDK8zKyihY95W6S0AYiz1HewoEuB2O	ROLE_USER	2026-03-25 13:07:37.954084
+4	qwert	qwert@mail	qwer123	$2a$10$JhkDk.XZVrv21QD1CMk.O.W8Yv8Vr9ukaYTlzfM6.IWAus2h3lzzm	ROLE_USER	2026-03-25 11:39:13.924517
+6	Newqwert	Newqwert@mail	Newqwer123	$2a$10$o3KwWSHzBMYSZh6JeNaCS.GanceW4uz/81uO0TUb7dya/Q3We7.na	ROLE_USER	2026-03-25 11:45:37.88921
 \.
 
 
@@ -221,21 +193,14 @@ COPY public.users (id, name, email, username, password, role, created_at) FROM s
 -- Name: posts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.posts_id_seq', 2, true);
-
-
---
--- Name: tasks_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
---
-
-SELECT pg_catalog.setval('public.tasks_id_seq', 1, true);
+SELECT pg_catalog.setval('public.posts_id_seq', 1, false);
 
 
 --
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 4, true);
+SELECT pg_catalog.setval('public.users_id_seq', 6, true);
 
 
 --
@@ -255,11 +220,11 @@ ALTER TABLE ONLY public.posts
 
 
 --
--- Name: tasks tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: subscriptions subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.tasks
-    ADD CONSTRAINT tasks_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT subscriptions_pkey PRIMARY KEY (follower_id, following_id);
 
 
 --
@@ -294,6 +259,50 @@ CREATE INDEX flyway_schema_history_s_idx ON public.flyway_schema_history USING b
 
 
 --
+-- Name: idx_posts_created_at; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_posts_created_at ON public.posts USING btree (created_at DESC);
+
+
+--
+-- Name: idx_posts_user_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_posts_user_id ON public.posts USING btree (user_id);
+
+
+--
+-- Name: idx_subscriptions_following_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_subscriptions_following_id ON public.subscriptions USING btree (following_id);
+
+
+--
+-- Name: idx_users_username; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX idx_users_username ON public.users USING btree (username);
+
+
+--
+-- Name: subscriptions fk_follower; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT fk_follower FOREIGN KEY (follower_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: subscriptions fk_following; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.subscriptions
+    ADD CONSTRAINT fk_following FOREIGN KEY (following_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
 -- Name: posts fk_posts_user; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -302,16 +311,8 @@ ALTER TABLE ONLY public.posts
 
 
 --
--- Name: tasks fk_tasks_user; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.tasks
-    ADD CONSTRAINT fk_tasks_user FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
-
-
---
 -- PostgreSQL database dump complete
 --
 
-\unrestrict GoicX2PBEKSeeBS3inzV5PFntDikmLmfMRIeZBHfiez6RIcZ9aalNbqy0uRcbD0
+\unrestrict GfnJ8GD6TsoiKe4zvttF1L0I0BLVuBis9VHlPyVSRlJWaWdwltkaxdDHnsbXLQf
 

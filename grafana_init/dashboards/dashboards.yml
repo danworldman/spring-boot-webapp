@@ -1,0 +1,10 @@
+apiVersion: 1
+
+providers:
+  - name: 'Spring Boot Monitoring'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      # Путь внутри контейнера
+      path: /etc/grafana/provisioning/dashboards

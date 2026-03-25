@@ -21,8 +21,8 @@ public class SecurityConfig {
                 // stateless-режим
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // разрешить всем смотреть документацию
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // разрешить всем смотреть документацию и мониторинг
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
                         // разрешить ТОЛЬКО POST для всех
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/users").permitAll()
                         // удаление только для админов

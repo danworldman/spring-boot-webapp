@@ -4,6 +4,7 @@ import com.example.webapp.dto.user.CreateUserRequestDTO;
 import com.example.webapp.dto.user.UpdateUserRequestDTO;
 import com.example.webapp.dto.user.UserResponseDTO;
 import com.example.webapp.entity.User;
+import com.example.webapp.event.UserRegisteredEvent;
 import com.example.webapp.exception.*;
 import com.example.webapp.mapper.UserMapper;
 import com.example.webapp.repository.UserRepository;
@@ -11,6 +12,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +29,7 @@ public class UserService {
     private final UserRepository repo;
     private final UserMapper mapper;
     private final PasswordEncoder passwordEncoder;
-    private final AsyncService asyncService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public UserResponseDTO getById(Long id) {
         return repo.findById(id)
@@ -59,14 +61,16 @@ public class UserService {
         User entity = mapper.toEntity(dto);
 
         // хешируется пароль
-        // тут сырой пароль из DTO и превращается в хэш
+        // сырой пароль из DTO превращается в хэш
         String encodedPassword = passwordEncoder.encode(dto.password());
         entity.setPassword(encodedPassword);
 
         User saved = repo.save(entity);
 
         // асинхронная задача
-        asyncService.processExternalTask(saved.getUsername());
+        // вместо asyncService.processExternalTask(saved.getUsername());
+        // публикуется событие
+        eventPublisher.publishEvent(new UserRegisteredEvent(saved.getUsername()));
 
         log.info("User successfully saved with ID: {}", saved.getId());
         return mapper.toDto(saved);
@@ -76,10 +80,10 @@ public class UserService {
     @Transactional
     public UserResponseDTO update(Long id, UpdateUserRequestDTO dto) {
         User user = repo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!user.getEmail().equals(dto.email()) && repo.existsByEmail(dto.email())) {
-            throw new IllegalArgumentException("Email already used");
+            throw new BadRequestException("Email already used");
         }
 
         mapper.updateEntity(user, dto);
@@ -93,8 +97,42 @@ public class UserService {
     @Transactional
     public void delete(Long id) {
         if (!repo.existsById(id)) {
-            throw new IllegalArgumentException("User not found");
+            throw new ResourceNotFoundException("User not found");
         }
         repo.deleteById(id);
+    }
+
+    @CacheEvict(value = "users", allEntries = true)
+    @Transactional
+    public void follow(Long followerId, Long followingId) {
+        if (followerId.equals(followingId)) {
+            throw new BadRequestException("Вы не можете подписаться на самого себя");
+        }
+
+        // достаем из БД двух реальных людей
+        // Метод findById достает из БД только данные самой строки таблицы users
+        // связанные коллекции (подписки/подписчики) остаются в состоянии Proxy,
+        // они подгрузятся из базы только в тот момент выхзова .get() на этих коллекциях
+        User follower = repo.findById(followerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Кто подписывается - не найден"));
+        User following = repo.findById(followingId)
+                .orElseThrow(() -> new ResourceNotFoundException("На кого подписываются - не найден"));
+
+        // добавление в коллекцию following пользователя follower
+        // Hibernate сам сделает INSERT в таблицу subscriptions
+        follower.getFollowing().add(following);
+
+        log.info("Пользователь {} подписался на {}", follower.getUsername(), following.getUsername());
+    }
+
+    @CacheEvict(value = "users", allEntries = true)
+    @Transactional
+    public void unfollow(Long followerId, Long followingId) {
+        User follower = repo.findById(followerId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // удаление из коллекции
+        // Hibernate сам сделает DELETE из таблицы
+        follower.getFollowing().removeIf(u -> u.getId().equals(followingId));
     }
 }
